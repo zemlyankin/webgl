@@ -61,8 +61,8 @@ function sierpUpdate(cb) {
 
 <p>
 <label for=tess>Tessellation</label>
-<input id="tess" type="range" min="0" max="8" step="1" oninput="tessUpdate(value)"/>
-<output for="tess" id="tess_value">4</output>
+<input id="tess" type="range" min="0" max="8" step="1" value="5" oninput="tessUpdate(value)"/>
+<output for="tess" id="tess_value">5</output>
 <script>
 function tessUpdate(value) {
 	document.querySelector('#tess_value').value = value;
@@ -74,7 +74,7 @@ function tessUpdate(value) {
 
 <p>
 <label for=angle>Angle
-<input id="angle" type="range" min="0" max="360" step="1" oninput="angleUpdate(value)"/>
+<input id="angle" type="range" min="0" max="360" step="1" value="180" oninput="angleUpdate(value)"/>
 <output for="angle" id="angle_value">180</output> degrees
 </label>
 <script>
