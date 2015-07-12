@@ -661,3 +661,43 @@ var sizeof = {
     'mat3' : new Float32Array( flatten(mat3()) ).byteLength,
     'mat4' : new Float32Array( flatten(mat4()) ).byteLength
 };
+
+
+function cross2d(a1, b1, a2, b2) {
+	var x1 = a1[0];
+	var y1 = a1[1];
+	var x2 = b1[0];
+    var	y2 = b1[1];
+    var x3 = a2[0];
+    var y3 = a2[1];
+    var x4 = b2[0];
+    var y4 = b2[1];
+    
+	var x12 = x1 - x2;
+	var x34 = x3 - x4;
+	var y12 = y1 - y2;
+	var y34 = y3 - y4;
+	
+	var c = x12 * y34 - y12 * x34;
+	
+	var a = x1 * y2 - y1 * x2;
+	var b = x3 * y4 - y3 * x4;
+
+	var x = (a * x34 - b * x12) / c;
+	var y = (a * y34 - b * y12) / c;
+	
+	return vec2(x, y);
+}
+
+function center2d(a, b, c) {
+	var ab = vec2((a[0] - b[0]) / 2.0, (a[1] - b[1]) / 2.0);
+	var ac = vec2((a[0] - c[0]) / 2.0, (a[1] - c[1]) / 2.0);
+	return vec2(x, y);
+}
+
+
+function distance(a, b) {
+	return Math.sqrt(Math.pow(b[0] - a[0], 2) + Math.pow(b[1] - a[1], 2));
+}
+
+
