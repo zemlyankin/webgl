@@ -28,8 +28,11 @@ main()
 </head>
 
 <body>
+<h3>Interactive Computer Graphics with WebGL</h3>
+<h4>Programming assignment 1: tessellation and twisting</h3>
+
 <p>
-<canvas id="gl-canvas" width="512" height="512">
+<canvas id="gl-canvas" width="400" height="400">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 </p>
@@ -70,9 +73,10 @@ function tessUpdate(value) {
 <p>
 
 <p>
-<label for=angle>Angle, degrees</label>
+<label for=angle>Angle
 <input id="angle" type="range" min="0" max="360" step="1" oninput="angleUpdate(value)"/>
-<output for="angle" id="angle_value">180</output>
+<output for="angle" id="angle_value">180</output> degrees
+</label>
 <script>
 function angleUpdate(value) {
 	document.querySelector('#angle_value').value = value;
