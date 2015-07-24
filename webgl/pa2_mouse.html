@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec4 vColor;
+
+varying vec4 fColor;
+
+void
+main()
+{
+    gl_Position = vPosition;
+    fColor = vColor;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec4 fColor;
+
+void
+main()
+{
+    gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="pa2_mouse.js"></script>
+</head>
+
+<body>
+<h3>Interactive Computer Graphics with WebGL</h3>
+<h4>Programming assignment 2: painting with the mouse</h3>
+
+<p>
+<canvas id="gl-canvas" width="400" height="400">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+</p>
+   
+<p>
+	<label for="lineWidth">Line width</label>
+	<input id="lineWidth" type="range" min="1" max="10" step="1" value="1" oninput="getElementById('width').value=this.value"/>
+	<output id="width" for="lineWidth">1</output>
+</p>
+
+<p>
+	<label for="lineColor">Line color</label>
+	<input id="lineColor" type="color" value="#ff0000"/>
+</p>
+
+<p>
+<button id="clear" type="submit">Clear drawing</button>
+</p>
+
+
+</body>
+</html>
