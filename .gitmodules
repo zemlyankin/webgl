@@ -1,0 +1,3 @@
+[submodule "webgl/book"]
+	path = webgl/book
+	url = https://github.com/esangel/WebGL.git
