@@ -1,12 +1,14 @@
 "use strict";
 
 var gl;
-var points = [];
+var points = [], outPoints;
 
 var NumTimesToSubdivide;
 var Wireframe;
 var Sierpinski;
 var Angle;
+var vAngle;
+var SoftwareRendering = false;
 
 var Triangle = [
 	vec2( 0.0, 1.0 ),
@@ -14,14 +16,13 @@ var Triangle = [
 	vec2(  Math.cos(radians(30)), -Math.sin(radians(30)) )
 ];
 
-window.onload = function init()
-{
-    var canvas = document.getElementById( "gl-canvas" );
+$(window).load(function() {
+    var canvas = $("#gl-canvas")[0];//document.getElementById( "gl-canvas" );
     
-    Angle = document.querySelector("#angle_value").value;
-    NumTimesToSubdivide = document.querySelector("#tess_value").value;
-    Sierpinski = document.querySelector("#sierp").checked;
-    Wireframe = document.querySelector("#wire").checked;
+    Angle = $("#angle_value")[0].value;
+    NumTimesToSubdivide = $("#tess_value")[0].value;
+    Sierpinski = $("#sierp")[0].checked;
+    Wireframe = $("#wire")[0].checked;
 
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
@@ -29,34 +30,37 @@ window.onload = function init()
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
 
+	divide();
     redraw();
-};
+});
+
 
 function redraw() {
-	points = []
-	
-    divideTriangle( Triangle[0], Triangle[1], Triangle[2],
-            NumTimesToSubdivide);
-    
-    twist(Angle);
+
+    if (SoftwareRendering) {
+    	outPoints = twist(Angle);
+    } else {
+    	outPoints = points;
+    }
 
     // Load shaders and initialize attribute buffers
-
-    var program = initShaders( gl, "vertex-shader", "fragment-shader" );
+    var program = initShaders( gl, SoftwareRendering ? "vertex-shader-software" : "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
     // Load the data into the GPU
-
     var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(outPoints), gl.STATIC_DRAW );
 
     // Associate out shader variables with our data buffer
-
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
-
+    
+    if (!SoftwareRendering) {
+    	vAngle = gl.getUniformLocation(program, "vAngle");
+    }
+    
     render();
 }
 
@@ -94,6 +98,12 @@ function divideTriangle( a, b, c, count )
     }
 }
 
+function divide() {
+	points = []
+	divideTriangle( Triangle[0], Triangle[1], Triangle[2],
+		NumTimesToSubdivide);
+}
+
 function twist(angleDegrees) {
 	var angle = radians(angleDegrees);
 	var out = []
@@ -104,13 +114,16 @@ function twist(angleDegrees) {
 		var y = p[0] * Math.sin(d * angle) + p[1] * Math.cos(d * angle);
 		out.push(vec2(x, y));
 	}
-	points = out;
+	return out;
 }
 
 function render() {
     gl.clear( gl.COLOR_BUFFER_BIT );
+    if (!SoftwareRendering) {
+    	gl.uniform1f(vAngle, Angle);
+	}
     if (Wireframe) {
-    	for (var i = 0; i < points.length; i+=3) {
+    	for (var i = 0; i < outPoints.length; i+=3) {
     		gl.drawArrays( gl.LINE_LOOP, i, 3 );
     	}
     } else {

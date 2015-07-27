@@ -1,13 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
+<script id="vertex-shader-software" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+
+void main()
+{
+    gl_Position = vPosition;
+}
+</script>
+
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec4 vPosition;
+uniform float vAngle;
 
 void
 main()
 {
-    gl_Position = vPosition;
+	// compute distance of vertex from origin
+    float d = sqrt(vPosition.x*vPosition.x + vPosition.y*vPosition.y );
+
+	float theta = d*radians(vAngle);
+
+    // rotate about origin as in instructions
+    float x = cos(theta)*vPosition.x - sin(theta)*vPosition.y;
+    float y = sin(theta)*vPosition.x + cos(theta)*vPosition.y;
+
+    // put result in gl_Position
+    gl_Position = vec4(x, y, 0.0, 1.0);
 }
 </script>
 
@@ -20,6 +40,8 @@ main()
     gl_FragColor = vec4( 0.0, 0.0, 1.0, 0.5 );
 }
 </script>
+
+<script type="text/javascript" src="dist/jquery-2.1.4/jquery-2.1.4.min.js"></script>
 
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
 <script type="text/javascript" src="Common/initShaders.js"></script>
@@ -65,8 +87,9 @@ function sierpUpdate(cb) {
 <output for="tess" id="tess_value">5</output>
 <script>
 function tessUpdate(value) {
-	document.querySelector('#tess_value').value = value;
+	$('#tess_value')[0].value = value;
 	NumTimesToSubdivide = value;
+	divide();
 	redraw();
 }
 </script>
@@ -79,7 +102,7 @@ function tessUpdate(value) {
 </label>
 <script>
 function angleUpdate(value) {
-	document.querySelector('#angle_value').value = value;
+	$('#angle_value')[0].value = value;
 	Angle = value;
 	redraw();
 }
