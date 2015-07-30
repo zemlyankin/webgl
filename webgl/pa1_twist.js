@@ -10,6 +10,7 @@ var Angle;
 var vAngle;
 var SoftwareRendering = false;
 
+// initialize triangle with center in (0, 0)
 var Triangle = [
 	vec2( 0.0, 1.0 ),
 	vec2( -Math.cos(radians(30)), -Math.sin(radians(30)) ),
@@ -17,12 +18,48 @@ var Triangle = [
 ];
 
 $(window).load(function() {
-    var canvas = $("#gl-canvas")[0];//document.getElementById( "gl-canvas" );
+    var canvas = $("#gl-canvas")[0];
+	
+    // Setup "gasket" mode checkbox, divide and redraw on each change
+    Sierpinski = $("#sierp:checked").val();
+    $("#sierp").change(function() {
+    	Sierpinski = $("#sierp:checked").val();
+    	divide();
+    	redraw();
+    });
+
+    // Setup "wireframe" mode checkbox, divide and redraw on each change
+    Wireframe = $("#wire:checked").val();
+    $("#wire").change(function() {
+    	Wireframe = $("#wire:checked").val();
+    	redraw();
+    });
+
+    // Setup "rendering" mode checkbox, divide and redraw on each change
+    Wireframe = $("#render:checked").val();
+    $("#render").change(function() {
+    	SoftwareRendering = $("#render:checked").val();
+    	redraw();
+    });
     
-    Angle = $("#angle_value")[0].value;
-    NumTimesToSubdivide = $("#tess_value")[0].value;
-    Sierpinski = $("#sierp")[0].checked;
-    Wireframe = $("#wire")[0].checked;
+    // Setup angle slider, redraw on each change
+	Angle = $('#angle').slider({
+		tooltip: 'always'
+	}).val();
+    $("#angle").change(function () {
+		Angle = $(this).val();
+		redraw();
+	});
+
+    // Setup tesselation count slider, divide on triangles and redraw on each change
+	NumTimesToSubdivide = $('#tess').slider({
+		tooltip: 'always',
+	}).val();
+    $("#tess").change(function () {
+		NumTimesToSubdivide = $(this).val();
+		divide();
+		redraw();
+	});
 
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
@@ -33,7 +70,6 @@ $(window).load(function() {
 	divide();
     redraw();
 });
-
 
 function redraw() {
 
