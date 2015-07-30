@@ -46,8 +46,8 @@ $(window).load(function() {
 	Angle = $('#angle').slider({
 		tooltip: 'always'
 	}).val();
-    $("#angle").change(function () {
-		Angle = $(this).val();
+    $("#angle").on("change", function (v) {
+    	Angle = v.value.newValue;
 		redraw();
 	});
 
@@ -55,8 +55,8 @@ $(window).load(function() {
 	NumTimesToSubdivide = $('#tess').slider({
 		tooltip: 'always',
 	}).val();
-    $("#tess").change(function () {
-		NumTimesToSubdivide = $(this).val();
+    $("#tess").change(function (v) {
+		NumTimesToSubdivide = v.value.newValue;
 		divide();
 		redraw();
 	});
