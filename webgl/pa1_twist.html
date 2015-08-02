@@ -7,43 +7,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
-<script id="vertex-shader-software" type="x-shader/x-vertex">
+<script id="vertex-shader" type="x-shader/x-vertex">
+precision mediump float;
+
 attribute vec4 vPosition;
+
+uniform float uAngle;
+uniform vec2 a,b,c;
+uniform bool uUseColors, uSoftwareRender;
+
+varying vec4 v_Color;
 
 void main()
 {
-    gl_Position = vPosition;
+	if (uSoftwareRender) {
+		gl_Position = vPosition;
+	} else {
+		// compute distance of vertex from origin
+    	float d = sqrt(vPosition.x*vPosition.x + vPosition.y*vPosition.y );
+
+		// compute angle of rotation that depends on distance
+		float theta = d*radians(uAngle);
+
+	    // rotate about origin as in instructions
+   	 	float x = cos(theta)*vPosition.x - sin(theta)*vPosition.y;
+   		 float y = sin(theta)*vPosition.x + cos(theta)*vPosition.y;
+
+	    // put result in gl_Position
+   		gl_Position = vec4(x, y, 0.0, 1.0);
+	}
+
+	// calculate and pass color to fragment
+	if (uUseColors) {
+		float r = 1.0 - distance(a, vPosition.xy) / distance(a,b);
+		float g = 1.0 - distance(b, vPosition.xy) / distance(a,b);
+		float b = 1.0 - distance(c, vPosition.xy) / distance(a,b);
+		v_Color = vec4(r, g, b, 1.0);
+	} else {
+		v_Color = vec4( 0.0, 0.0, 1.0, 0.5 );
+	}
 }
-</script>
 
-<script id="vertex-shader" type="x-shader/x-vertex">
-attribute vec4 vPosition;
-uniform float vAngle;
-
-void
-main()
-{
-	// compute distance of vertex from origin
-    float d = sqrt(vPosition.x*vPosition.x + vPosition.y*vPosition.y );
-
-	float theta = d*radians(vAngle);
-
-    // rotate about origin as in instructions
-    float x = cos(theta)*vPosition.x - sin(theta)*vPosition.y;
-    float y = sin(theta)*vPosition.x + cos(theta)*vPosition.y;
-
-    // put result in gl_Position
-    gl_Position = vec4(x, y, 0.0, 1.0);
-}
 </script>
 
 <script id="fragment-shader" type="x-shader/x-fragment">
 precision mediump float;
 
-void
-main()
+varying vec4 v_Color;
+
+void main()
 {
-    gl_FragColor = vec4( 0.0, 0.0, 1.0, 0.5 );
+	gl_FragColor = v_Color;
 }
 </script>
 
@@ -109,6 +123,16 @@ main()
 				<div class="checkbox">
 					<label for="sierp">
 						<input id="sierp" type="checkbox"/>Sierpinski gasket mode
+					</label>
+				</div>
+			</div>
+		</div>
+		
+		<div class="form-group">
+			<div class="col-xs-offset-5">
+				<div class="checkbox">
+					<label for="colors">
+						<input id="colors" type="checkbox"/>Different colors
 					</label>
 				</div>
 			</div>

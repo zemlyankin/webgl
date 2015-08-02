@@ -4,11 +4,13 @@ var gl;
 var points = [], outPoints;
 
 var NumTimesToSubdivide;
-var Wireframe;
-var Sierpinski;
 var Angle;
-var vAngle;
-var SoftwareRendering = false;
+var Wireframe, Sierpinski, SoftwareRender, UseColors;
+
+var uAngle;
+var uUseColors, uSoftwareRender;
+
+var a,b,c;
 
 // initialize triangle with center in (0, 0)
 var Triangle = [
@@ -21,24 +23,31 @@ $(window).load(function() {
     var canvas = $("#gl-canvas")[0];
 	
     // Setup "gasket" mode checkbox, divide and redraw on each change
-    Sierpinski = $("#sierp:checked").val();
+    Sierpinski = $("#sierp").is(":checked");
     $("#sierp").change(function() {
-    	Sierpinski = $("#sierp:checked").val();
+    	Sierpinski = $("#sierp").is(":checked");
     	divide();
     	redraw();
     });
 
     // Setup "wireframe" mode checkbox, divide and redraw on each change
-    Wireframe = $("#wire:checked").val();
+    Wireframe = $("#wire").is(":checked");
     $("#wire").change(function() {
-    	Wireframe = $("#wire:checked").val();
+    	Wireframe = $("#wire").is(":checked");
     	redraw();
     });
 
+    // Setup colors checkbox and redraw on each change
+    UseColors = $("#colors").is(":checked");
+    $("#colors").change(function() {
+    	UseColors = $("#colors").is(":checked");
+    	redraw();
+    });
+    
     // Setup "rendering" mode checkbox, divide and redraw on each change
-    Wireframe = $("#render:checked").val();
+    SoftwareRender = $("#render").is(":checked");
     $("#render").change(function() {
-    	SoftwareRendering = $("#render:checked").val();
+    	SoftwareRender = $("#render").is(":checked");
     	redraw();
     });
     
@@ -73,14 +82,14 @@ $(window).load(function() {
 
 function redraw() {
 
-    if (SoftwareRendering) {
+    if (SoftwareRender) {
     	outPoints = twist(Angle);
     } else {
     	outPoints = points;
     }
 
     // Load shaders and initialize attribute buffers
-    var program = initShaders( gl, SoftwareRendering ? "vertex-shader-software" : "vertex-shader", "fragment-shader" );
+    var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
     // Load the data into the GPU
@@ -93,16 +102,14 @@ function redraw() {
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
     
-    if (!SoftwareRendering) {
-    	vAngle = gl.getUniformLocation(program, "vAngle");
-    }
-    
+  	uAngle = gl.getUniformLocation(program, "uAngle");
+    a = gl.getUniformLocation(program, "a");
+    b = gl.getUniformLocation(program, "b");
+    c = gl.getUniformLocation(program, "c");
+    uUseColors = gl.getUniformLocation(program, "uUseColors");
+    uSoftwareRender = gl.getUniformLocation(program, "uSoftwareRender");
+        
     render();
-}
-
-function triangle( a, b, c )
-{
-    points.push( a, b, c );
 }
 
 function divideTriangle( a, b, c, count )
@@ -111,7 +118,7 @@ function divideTriangle( a, b, c, count )
     // check for end of recursion
 
     if ( count == 0 ) {
-        triangle( a, b, c );
+    	points.push( a, b, c );
     }
     else {
 
@@ -155,9 +162,14 @@ function twist(angleDegrees) {
 
 function render() {
     gl.clear( gl.COLOR_BUFFER_BIT );
-    if (!SoftwareRendering) {
-    	gl.uniform1f(vAngle, Angle);
-	}
+    
+    gl.uniform1f(uAngle, Angle);
+    gl.uniform2fv(a, flatten(Triangle[0]));
+    gl.uniform2fv(b, flatten(Triangle[1]));
+    gl.uniform2fv(c, flatten(Triangle[2]));
+    gl.uniform1i(uSoftwareRender, SoftwareRender);
+    gl.uniform1i(uUseColors, UseColors);
+    
     if (Wireframe) {
     	for (var i = 0; i < outPoints.length; i+=3) {
     		gl.drawArrays( gl.LINE_LOOP, i, 3 );
