@@ -1,3 +1,22 @@
+#gl-canvas {
+//    max-width: 100%;
+}
+
 .spacer {
-    margin-top: 36px;
+    margin-top: 16px;
+}
+
+.left_label {
+    float:left;
+}
+
+.right_label {
+    float:left;
+}
+
+input[type='range']{
+    overflow: hidden;
+    float:left;
+    padding: 2px;
+    width: 70%
 }
