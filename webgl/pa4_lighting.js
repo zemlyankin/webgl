@@ -13,7 +13,8 @@ var Sphere = {
 	latitudeBands: 30,
 	longitudeBands: 30,
 	radius: 0.2,
-	x: [],
+	vertices: [],
+	normals: [],
 	indices: [],
 	vBuffer: null,
 	iBuffer: null
@@ -24,6 +25,7 @@ var Cone = {
 	radius: 0.2,
 	height: 0.4,
 	vertices: [],
+	normals: [],
 	indices: [],
 	vBuffer: null,
 	iBuffer: null
@@ -34,10 +36,21 @@ var Cylinder = {
 	radius: 0.2,
 	height: 0.4,
 	vertices: [],
+	normals: [],
 	indices: [],
 	vBuffer: null,
 	iBuffer: null
 }
+
+var lightPosition = vec4(1.0, 1.0, 1.0, 1.0 );
+var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
+var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+
+var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
+var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
+var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+var materialShininess = 20.0;
 
 var Obj = function(shape, transVector, rotVector, scaleVector, colorVector) {
 	return {
@@ -57,12 +70,14 @@ $(window).load(function() {
     setupMouseHandlers();
 
     Sphere.vertices = new Float32Array(sphereVertices(Sphere.latitudeBands, Sphere.longitudeBands, Sphere.radius));
+    Sphere.normals = new Float32Array(sphereNormals(Sphere.vertices));
     Sphere.indices = new Uint16Array(sphereIndices(Sphere.latitudeBands, Sphere.longitudeBands));
 
     Cone.vertices = new Float32Array(coneVertices(Cone.sectionsNumber, Cone.radius, Cone.height));
     Cone.indices = new Uint16Array(coneIndices(Cone.sectionsNumber));
 
     Cylinder.vertices = new Float32Array(cylinderVertices(Cylinder.sectionsNumber, Cylinder.radius, Cylinder.height));
+    Cylinder.normals = new Float32Array(cylinderNormals(Cylinder.vertices, Cylinder.height));
     Cylinder.indices = new Uint16Array(cylinderIndices(Cylinder.sectionsNumber));
 
     gl = WebGLUtils.setupWebGL( canvas );
@@ -76,6 +91,7 @@ $(window).load(function() {
     gl.useProgram( shaderProgram.program );
     
     shaderProgram.vPosition = gl.getAttribLocation( shaderProgram.program, "vPosition" );
+    shaderProgram.vNormal = gl.getAttribLocation( shaderProgram.program, "vNormal" );
     shaderProgram.colorVector = gl.getUniformLocation(shaderProgram.program, "color");
 	shaderProgram.modelView = gl.getUniformLocation(shaderProgram.program, "modelViewMatrix")
 	shaderProgram.projection = gl.getUniformLocation(shaderProgram.program, "projectionMatrix")
@@ -257,6 +273,10 @@ function initBuffers() {
     gl.bindBuffer( gl.ARRAY_BUFFER, Sphere.vBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, Sphere.vertices, gl.STATIC_DRAW );
 
+    Sphere.nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, Sphere.nBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, Sphere.normals, gl.STATIC_DRAW );
+
     Sphere.iBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Sphere.iBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Sphere.indices, gl.STATIC_DRAW); 
@@ -272,6 +292,10 @@ function initBuffers() {
     Cylinder.vBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, Cylinder.vBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, Cylinder.vertices, gl.STATIC_DRAW);
+
+    Cylinder.nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, Cylinder.nBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, Cylinder.normals, gl.STATIC_DRAW );
 
     Cylinder.iBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Cylinder.iBuffer);
@@ -300,6 +324,18 @@ function sphereVertices(latitudeBands, longitudeBands, radius) {
 		}
 	}
 	return vertexPositionData;
+}
+
+function sphereNormals(vertexPositionData) {
+	var normalPositionData = [];
+	for (var i = 0; i < vertexPositionData.length; i+=3) {
+		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
+		var normal = subtract(vec3(), p);
+		normalPositionData.push(normal[0]);
+		normalPositionData.push(normal[1]);
+		normalPositionData.push(normal[2]);
+	}
+	return normalPositionData;
 }
 
 function sphereIndices(latitudeBands, longitudeBands) {
@@ -384,6 +420,24 @@ function cylinderVertices(sectionsNumber, radius, height) {
     return vertexPositionData;
 }
 
+function cylinderNormals(vertexPositionData, height) {
+	var normalPositionData = [];
+	var y1 = height / 2.0;
+	var y2 = -height / 2.0;
+	for (var i = 0; i < vertexPositionData.length; i+=6) {
+		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
+		var normal = subtract(vec3(0, y1, 0), p);
+		normalPositionData.push(normal[0]);
+		normalPositionData.push(normal[1]);
+		normalPositionData.push(normal[2]);
+		var p = vec3(vertexPositionData[i+3], vertexPositionData[i+4], vertexPositionData[i+5]);
+		var normal = subtract(vec3(0, y2, 0), p);
+		normalPositionData.push(normal[0]);
+		normalPositionData.push(normal[1]);
+		normalPositionData.push(normal[2]);
+	}
+	return normalPositionData;
+}
 
 function cylinderIndices(sectionsNumber) {
     var indexData = [];
@@ -458,7 +512,7 @@ function getObject() {
 //var  fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
 //var  aspect;       // Viewport aspect ratio
 //
-//var mvMatrix, pMatrix;
+var mvMatrix, pMatrix, normalMatrix;
 //var modelView, projection;
 //var eye;
 //var at = vec3(0.0, 0.0, 0.0);
@@ -467,15 +521,39 @@ function getObject() {
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
 
 //    eye = vec3(radius*Math.sin(theta)*Math.cos(phi),
 //        radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
 //    mvMatrix = lookAt(eye, at , up);
 //    pMatrix = perspective(fovy, aspect, near, far);
 //
-//    gl.uniformMatrix4fv( shaderProgram.modelView, false, flatten(mvMatrix) );
-//    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(pMatrix) );
+    mvMatrix = mat4();
+    pMatrix = mat4();
+    gl.uniformMatrix4fv( shaderProgram.modelView, false, flatten(mvMatrix) );
+    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(pMatrix) );
 
+    normalMatrix = [
+                    vec3(mvMatrix[0][0], mvMatrix[0][1], mvMatrix[0][2]),
+                    vec3(mvMatrix[1][0], mvMatrix[1][1], mvMatrix[1][2]),
+                    vec3(mvMatrix[2][0], mvMatrix[2][1], mvMatrix[2][2])
+                ];
+    gl.uniformMatrix3fv(gl.getUniformLocation(shaderProgram.program, "normalMatrix"), false, flatten(normalMatrix) );
+    
+    var ambientProduct = mult(lightAmbient, materialAmbient);
+    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    var specularProduct = mult(lightSpecular, materialSpecular);
+    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+       "ambientProduct"),flatten(ambientProduct) );
+    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+       "diffuseProduct"),flatten(diffuseProduct) );
+    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+       "specularProduct"),flatten(specularProduct) );
+    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+       "lightPosition"),flatten(lightPosition) );
+    gl.uniform1f( gl.getUniformLocation(shaderProgram.program,
+       "shininess"),materialShininess );
+    
     objects.push(getObject());
 
 	for (var i = 0; i < objects.length; i++) {
@@ -486,14 +564,19 @@ function render() {
 		gl.bindBuffer(gl.ARRAY_BUFFER, o.shape.vBuffer);    
 		gl.vertexAttribPointer( shaderProgram.vPosition, 3, gl.FLOAT, false, 0, 0 );
 		gl.enableVertexAttribArray( shaderProgram.vPosition );
+		gl.bindBuffer(gl.ARRAY_BUFFER, o.shape.nBuffer);    
+		gl.vertexAttribPointer( shaderProgram.vNormal, 3, gl.FLOAT, false, 0, 0 );
+		gl.enableVertexAttribArray( shaderProgram.vNormal );
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, o.shape.iBuffer);
 		var fillColor = (i < objects.length - 1) ? o.colorVector : vec4(1.0, 1.0, 1.0, 1.0);
 		var wireColor;
 		if (fillColor[0] + fillColor[1] + fillColor[2] > 1.5) wireColor = vec4(0.0, 0.0, 0.0, 0.5);
 		else wireColor = vec4(0.5, 0.5, 0.5, 0.5)
 		gl.uniform4fv(shaderProgram.colorVector, wireColor);
+		gl.polygonOffset(0.0, 0.0);
 		gl.drawElements(gl.LINE_STRIP, o.shape.indices.length, gl.UNSIGNED_SHORT, 0);
 		gl.uniform4fv(shaderProgram.colorVector, fillColor);
+		gl.polygonOffset(1.0, 1.0);
 		gl.drawElements(gl.TRIANGLES, o.shape.indices.length, gl.UNSIGNED_SHORT, 0);
 	}
 
