@@ -42,16 +42,39 @@ var Cylinder = {
 	iBuffer: null
 }
 
-var lightPosition = [ vec4(1.0, 1.0, 1.0, 1.0 ),
-						vec4(1.0, -1.0, 1.0, 1.0 )];
-var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
-var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
-var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
+var Light = function(p, a, d, s) {
+	return {
+		position: p,
+		ambient: a,
+		diffuse: d,
+		specular: s
+	};
+}
+
+var lights = [];
+lights.push(new Light(
+		vec4(0.0, 0.0, 1.0, 1.0 ),
+		vec4(0.2, 0.2, 0.2, 1.0 ),
+		vec4( 0.1, 0.1, 0.1, 1.0 ),
+		vec4( 0, 0, 0, 1.0 )
+		));
+lights.push(new Light(
+		vec4(0, 0, -1.0, 0.0 ),
+		vec4(0.0, 0.0, 0.0, 1.0 ),
+		vec4( 0.5, 0.5, 0.5, 1.0 ),
+		vec4( 0.0, 0.0, 1.0, 1.0 )
+		));
+lights.push(new Light(
+		vec4(1.0, -1.0, 1.0, 1.0 ),
+		vec4(0.0, 0.0, 0.0, 1.0 ),
+		vec4( .5, .5, .5, 1.0 ),
+		vec4( 1.0, 0.0, 0.0, 1.0 )
+		));
 
 var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
 var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 100.0;
+var materialShininess = 50.0;
 
 var Obj = function(shape, transVector, rotVector, scaleVector, colorVector) {
 	return {
@@ -85,7 +108,7 @@ $(window).load(function() {
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 0.95, 0.95, 0.95, 1.0 );
+    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     // Load shaders and initialize attribute buffers
     shaderProgram.program = initShaders( gl, "vertex-shader", "fragment-shader" );
@@ -94,6 +117,7 @@ $(window).load(function() {
     shaderProgram.vPosition = gl.getAttribLocation( shaderProgram.program, "vPosition" );
     shaderProgram.vNormal = gl.getAttribLocation( shaderProgram.program, "vNormal" );
     shaderProgram.colorVector = gl.getUniformLocation(shaderProgram.program, "color");
+	shaderProgram.transform = gl.getUniformLocation(shaderProgram.program, "transformMatrix");
 	shaderProgram.modelView = gl.getUniformLocation(shaderProgram.program, "modelViewMatrix");
 	shaderProgram.projection = gl.getUniformLocation(shaderProgram.program, "projectionMatrix");
 	shaderProgram.normal = gl.getUniformLocation(shaderProgram.program, "normalMatrix");
@@ -145,7 +169,7 @@ function setupMouseHandlers() {
      	var pos = getGlPos(event);
      	if (holder.noAction) {
 			objects.push(getObject());
-			render();
+			//render();
      	}
     });
 	
@@ -176,7 +200,7 @@ function setupMouseHandlers() {
 			$("#scaleYval").text($("#scaleY").val());
 			break;
     	}
-        render();
+        //render();
     });
 
     $("#gl-canvas").on("wheel", function(event) {
@@ -202,71 +226,71 @@ function setupMouseHandlers() {
 			break;
     	}
 		event.preventDefault();
-		render();
+		//render();
 	});	
 }
 
 function setupControls() {
 	$("#transX").on("input", function(v) {
 		$("#transXval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#transY").on("input", function(v) {
 		$("#transYval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#transZ").on("input", function(v) {
 		$("#transZval").text(v.target.value);
-		render();
+		//render();
 	});
     
 	$("#rotX").on("input", function(v) {
 		$("#rotXval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#rotY").on("input", function(v) {
 		$("#rotYval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#rotZ").on("input", function(v) {
 		$("#rotZval").text(v.target.value);
-		render();
+		//render();
 	});
     
 	$("#scaleX").on("input", function(v) {
 		$("#scaleXval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#scaleY").on("input", function(v) {
 		$("#scaleYval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$("#scaleZ").on("input", function(v) {
 		$("#scaleZval").text(v.target.value);
-		render();
+		//render();
 	});
 
 	$(".shape")[0].classList.add("active");
 	$(".shape").click(function(v) {
 		$(".shape").removeClass("active");
 		v.target.classList.add("active");
-		render();
+		//render();
 	});
 
 	$("#add").click(function(v) {
 		objects.push(getObject());
-		render();
+		//render();
 	});
 
 	$("#clear").click(function(v) {
 		objects = [];
-		render();
+		//render();
 	});
 }
 
@@ -435,31 +459,37 @@ function cylinderNormals(vertexPositionData, height) {
 	var normalPositionData = [];
 	var y1 = height / 2.0;
 	var y2 = -height / 2.0;
-	for (var i = 0; i < vertexPositionData.length; i+=12) {
+	for (var i = 0; i < vertexPositionData.length - 6; i+=12) {
 		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
-		var normal = subtract(vec3(0, y1, 0), p);
+		var normal = normalize(subtract(p, vec3(0, y1, 0)));
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
 		
 		var p = vec3(vertexPositionData[i+3], vertexPositionData[i+4], vertexPositionData[i+5]);
-		var normal = subtract(vec3(0, y2, 0), p);
+		var normal = normalize(subtract(p, vec3(0, y2, 0)));
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
 		
-		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
-		var normal = vec3(0, 1, 0);
+		var normal = vec3(0.0, 1.0, 0.0);
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
 
-		var p = vec3(vertexPositionData[i+3], vertexPositionData[i+4], vertexPositionData[i+5]);
-		var normal = vec3(0.0, -height, 0.0);
+		var normal = vec3(0.0, -1, 0.0);
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
 	}
+	var normal = vec3(0.0, -1.0, 0.0);
+	normalPositionData.push(normal[0]);
+	normalPositionData.push(normal[1]);
+	normalPositionData.push(normal[2]);
+	var normal = vec3(0.0, 1.0, 0.0);
+	normalPositionData.push(normal[0]);
+	normalPositionData.push(normal[1]);
+	normalPositionData.push(normal[2]);
 	return normalPositionData;
 }
 
@@ -491,19 +521,19 @@ function cylinderIndices(sectionsNumber) {
 }
 
 function getObject() {
-	var tx = $("#transX").val();
-	var ty = $("#transY").val();
-	var tz = $("#transZ").val();
+	var tx = parseFloat($("#transX").val());
+	var ty = parseFloat($("#transY").val());
+	var tz = parseFloat($("#transZ").val());
 	var T = vec3(tx, ty, tz);
 
-	var rx = $("#rotX").val();
-	var ry = $("#rotY").val();
-	var rz = $("#rotZ").val();
+	var rx = parseFloat($("#rotX").val());
+	var ry = parseFloat($("#rotY").val());
+	var rz = parseFloat($("#rotZ").val());
 	var R = vec3(rx, ry, rz);
 
-	var sx = $("#scaleX").val() / 100.0;
-	var sy = $("#scaleY").val() / 100.0;
-	var sz = $("#scaleZ").val() / 100.0;
+	var sx = parseFloat($("#scaleX").val()) / 100.0;
+	var sy = parseFloat($("#scaleY").val()) / 100.0;
+	var sz = parseFloat($("#scaleZ").val()) / 100.0;
 	var S = vec3(sx, sy, sz);
 
 	// get chosen shape
@@ -526,54 +556,72 @@ function getObject() {
 	return new Obj(refShapes[shapeIndex], T, R, S, color);
 }
 
-//var near = 0.3;
-//var far = 3.0;
-//var radius = 3;
-//var theta  = 0.0;
-//var phi    = 0.0;
-//var dr = 5.0 * Math.PI/180.0;
+var near = 10;
+var far = -10;
+var radius = 1.5;
+var theta  = 0.0;
+var phi    = 0.0;
+var dr = 5.0 * Math.PI/180.0;
+
+var left = -1.0;
+var right = 1.0;
+var ytop = 1.0;
+var bottom = -1.0;
+
 //
 //var  fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
 //var  aspect;       // Viewport aspect ratio
 //
 //var mvMatrix, pMatrix;
 //var modelView, projection;
-//var eye;
-//var at = vec3(0.0, 0.0, 0.0);
-//var up = vec3(0.0, 1.0, 0.0);
+var eye;
+var at = vec3(0.0, 0.0, -1.0);
+var up = vec3(0.0, 1.0, 1.0);
+
+var lightAngle = 0;
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.POLYGON_OFFSET_FILL);
+    
+    eye = vec3(radius*Math.sin(theta)*Math.cos(phi),
+            radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
 
-//    eye = vec3(radius*Math.sin(theta)*Math.cos(phi),
-//        radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
-//    mvMatrix = lookAt(eye, at , up);
-//    var projectionMatrix = perspective(fovy, aspect, near, far);
-//
-    var mvMatrix = mat4();
-    var projectionMatrix = mat4();
-    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(projectionMatrix) );
+    var modelViewMatrix = lookAt(eye, at , up);
+    var projectionMatrix = ortho(left, right, bottom, ytop, near, far);
 
     objects.push(getObject());
+    
+    lightAngle+=1;
+	lights[1].position[0] = Math.sin(radians(lightAngle));
+    lights[1].position[1] = 0.0;
+	lights[1].position[2] = Math.cos(radians(lightAngle));
+    lights[2].position[0] = -1.0;
+	lights[2].position[1] = Math.cos(radians(lightAngle));
+	lights[2].position[2] = Math.sin(radians(lightAngle));
 
 	for (var i = 0; i < objects.length; i++) {
 		var o = objects[i];
-		
-	    var ambientProduct = mult(lightAmbient, materialAmbient);
-	    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
-	    var specularProduct = mult(lightSpecular, materialSpecular);
-	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-	       "ambientProduct"),flatten(ambientProduct) );
-	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-	       "diffuseProduct"),flatten(diffuseProduct) );
-	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-	       "specularProduct"),flatten(specularProduct) );
-	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-	       "lightPosition"),flatten(lightPosition) );
-	    gl.uniform1f( gl.getUniformLocation(shaderProgram.program,
-	       "shininess"),materialShininess );
+		var fillColor = (i < objects.length - 1) ? o.colorVector : vec4(1.0, 1.0, 1.0, 1.0);
+	
+		materialAmbient = fillColor;
+	    var ambientProduct = [];
+	    var diffuseProduct = [];
+	    var specularProduct = [];
+	    var lightPosition = [];
+	    
+	    for (var l = 0; l < lights.length; l++) {
+	    	ambientProduct.push(mult(lights[l].ambient, materialAmbient));
+	    	diffuseProduct.push(mult(lights[l].diffuse, materialDiffuse));
+	    	specularProduct.push(mult(lights[l].specular, materialSpecular));
+	    	lightPosition.push(lights[l].position);
+	    }
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program, "ambientProduct"),flatten(ambientProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program, "diffuseProduct"),flatten(diffuseProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program, "specularProduct"),flatten(specularProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program, "lightPosition"),flatten(lightPosition) );
+	    gl.uniform1f( gl.getUniformLocation(shaderProgram.program, "shininess"),materialShininess );
 	    
 	    var T = translate(o.transVector)
 	    var Rx = rotateZ(o.rotVector[0]);
@@ -581,10 +629,13 @@ function render() {
 	    var Rz = rotateZ(o.rotVector[2]);
 		var S = scalem(o.scaleVector);
 		
-		var modelViewMatrix = mult(T, mult(Rx, mult(Ry, mult(Rz, S))));
+		var transformMatrix = mult(T, mult(Rx, mult(Ry, mult(Rz, S))));
+	    var normalMatrix_ = normalMatrix(transformMatrix, true);
+	    //normalMatrix_ = [1,0,0,0,1,0,0,0,1];
+		
+	    gl.uniformMatrix4fv( shaderProgram.transform, false, flatten(transformMatrix) );
 	    gl.uniformMatrix4fv( shaderProgram.modelView, false, flatten(modelViewMatrix) );
-	
-	    var normalMatrix_ = normalMatrix(modelViewMatrix, true);
+	    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(projectionMatrix) );
 	    gl.uniformMatrix3fv(shaderProgram.normal, false, flatten(normalMatrix_) );
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, o.shape.vBuffer);    
@@ -594,7 +645,6 @@ function render() {
 		gl.vertexAttribPointer( shaderProgram.vNormal, 3, gl.FLOAT, false, 0, 0 );
 		gl.enableVertexAttribArray( shaderProgram.vNormal );
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, o.shape.iBuffer);
-		var fillColor = (i < objects.length - 1) ? o.colorVector : vec4(1.0, 1.0, 1.0, 1.0);
 //		var wireColor;
 //		if (fillColor[0] + fillColor[1] + fillColor[2] > 1.5) wireColor = vec4(0.0, 0.0, 0.0, 0.5);
 //		else wireColor = vec4(0.5, 0.5, 0.5, 0.5)
@@ -607,4 +657,6 @@ function render() {
 	}
 
     objects.pop();
+    
+    window.requestAnimFrame(render);
 }
