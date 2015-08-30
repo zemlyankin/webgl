@@ -42,7 +42,8 @@ var Cylinder = {
 	iBuffer: null
 }
 
-var lightPosition = vec4(1.0, 1.0, 1.0, 1.0 );
+var lightPosition = [ vec4(1.0, 1.0, 1.0, 1.0 ),
+						vec4(1.0, -1.0, 1.0, 1.0 )];
 var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
 var lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
 var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -50,7 +51,7 @@ var lightSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
 var materialAmbient = vec4( 1.0, 0.0, 1.0, 1.0 );
 var materialDiffuse = vec4( 1.0, 0.8, 0.0, 1.0 );
 var materialSpecular = vec4( 1.0, 1.0, 1.0, 1.0 );
-var materialShininess = 20.0;
+var materialShininess = 100.0;
 
 var Obj = function(shape, transVector, rotVector, scaleVector, colorVector) {
 	return {
@@ -93,11 +94,12 @@ $(window).load(function() {
     shaderProgram.vPosition = gl.getAttribLocation( shaderProgram.program, "vPosition" );
     shaderProgram.vNormal = gl.getAttribLocation( shaderProgram.program, "vNormal" );
     shaderProgram.colorVector = gl.getUniformLocation(shaderProgram.program, "color");
-	shaderProgram.modelView = gl.getUniformLocation(shaderProgram.program, "modelViewMatrix")
-	shaderProgram.projection = gl.getUniformLocation(shaderProgram.program, "projectionMatrix")
-	shaderProgram.translationVector = gl.getUniformLocation(shaderProgram.program, "translationVector")
-	shaderProgram.rotationVector = gl.getUniformLocation(shaderProgram.program, "rotationVector")
-	shaderProgram.scaleVector = gl.getUniformLocation(shaderProgram.program, "scaleVector")
+	shaderProgram.modelView = gl.getUniformLocation(shaderProgram.program, "modelViewMatrix");
+	shaderProgram.projection = gl.getUniformLocation(shaderProgram.program, "projectionMatrix");
+	shaderProgram.normal = gl.getUniformLocation(shaderProgram.program, "normalMatrix");
+	shaderProgram.translationVector = gl.getUniformLocation(shaderProgram.program, "translationVector");
+	shaderProgram.rotationVector = gl.getUniformLocation(shaderProgram.program, "rotationVector");
+	shaderProgram.scaleVector = gl.getUniformLocation(shaderProgram.program, "scaleVector");
 
     initBuffers();
 
@@ -407,10 +409,19 @@ function cylinderVertices(sectionsNumber, radius, height) {
 		vertexPositionData.push(radius * x);
 		vertexPositionData.push(y1);
 		vertexPositionData.push(radius * z);
+		
 		vertexPositionData.push(radius * x);
 		vertexPositionData.push(y2);
 		vertexPositionData.push(radius * z);
-    }
+
+		vertexPositionData.push(radius * x);
+		vertexPositionData.push(y1);
+		vertexPositionData.push(radius * z);
+		
+		vertexPositionData.push(radius * x);
+		vertexPositionData.push(y2);
+		vertexPositionData.push(radius * z);
+	}
     vertexPositionData.push(0);
 	vertexPositionData.push(-height / 2.0);
 	vertexPositionData.push(0);
@@ -424,14 +435,27 @@ function cylinderNormals(vertexPositionData, height) {
 	var normalPositionData = [];
 	var y1 = height / 2.0;
 	var y2 = -height / 2.0;
-	for (var i = 0; i < vertexPositionData.length; i+=6) {
+	for (var i = 0; i < vertexPositionData.length; i+=12) {
 		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
 		var normal = subtract(vec3(0, y1, 0), p);
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
+		
 		var p = vec3(vertexPositionData[i+3], vertexPositionData[i+4], vertexPositionData[i+5]);
 		var normal = subtract(vec3(0, y2, 0), p);
+		normalPositionData.push(normal[0]);
+		normalPositionData.push(normal[1]);
+		normalPositionData.push(normal[2]);
+		
+		var p = vec3(vertexPositionData[i], vertexPositionData[i+1], vertexPositionData[i+2]);
+		var normal = vec3(0, 1, 0);
+		normalPositionData.push(normal[0]);
+		normalPositionData.push(normal[1]);
+		normalPositionData.push(normal[2]);
+
+		var p = vec3(vertexPositionData[i+3], vertexPositionData[i+4], vertexPositionData[i+5]);
+		var normal = vec3(0.0, -height, 0.0);
 		normalPositionData.push(normal[0]);
 		normalPositionData.push(normal[1]);
 		normalPositionData.push(normal[2]);
@@ -441,14 +465,14 @@ function cylinderNormals(vertexPositionData, height) {
 
 function cylinderIndices(sectionsNumber) {
     var indexData = [];
-    var bottom = (sectionsNumber + 1) * 2;
-    var top = (sectionsNumber + 1) * 2 + 1;
+    var bottom = (sectionsNumber + 1) * 4;
+    var top = (sectionsNumber + 1) * 4 + 1;
     for (var section = 0; section < sectionsNumber; section++) {
-    	var first = section * 2;
-    	var second = first + 2;
+    	var first = section * 4;
+    	var second = first + 4;
 
-     	indexData.push(first);
-        indexData.push(second);
+     	indexData.push(first + 2);
+        indexData.push(second + 2);
         indexData.push(top);
 
     	indexData.push(first);
@@ -459,9 +483,9 @@ function cylinderIndices(sectionsNumber) {
         indexData.push(first+1);
         indexData.push(second+1);
 
-     	indexData.push(first + 1);
+     	indexData.push(first + 1 + 2);
         indexData.push(bottom);
-        indexData.push(second + 1);
+        indexData.push(second + 1 + 2);
     }
     return indexData;
 }
@@ -477,9 +501,9 @@ function getObject() {
 	var rz = $("#rotZ").val();
 	var R = vec3(rx, ry, rz);
 
-	var sx = $("#scaleX").val();
-	var sy = $("#scaleY").val();
-	var sz = $("#scaleZ").val();
+	var sx = $("#scaleX").val() / 100.0;
+	var sy = $("#scaleY").val() / 100.0;
+	var sz = $("#scaleZ").val() / 100.0;
 	var S = vec3(sx, sy, sz);
 
 	// get chosen shape
@@ -512,7 +536,7 @@ function getObject() {
 //var  fovy = 45.0;  // Field-of-view in Y direction angle (in degrees)
 //var  aspect;       // Viewport aspect ratio
 //
-var mvMatrix, pMatrix, normalMatrix;
+//var mvMatrix, pMatrix;
 //var modelView, projection;
 //var eye;
 //var at = vec3(0.0, 0.0, 0.0);
@@ -526,41 +550,43 @@ function render() {
 //    eye = vec3(radius*Math.sin(theta)*Math.cos(phi),
 //        radius*Math.sin(theta)*Math.sin(phi), radius*Math.cos(theta));
 //    mvMatrix = lookAt(eye, at , up);
-//    pMatrix = perspective(fovy, aspect, near, far);
+//    var projectionMatrix = perspective(fovy, aspect, near, far);
 //
-    mvMatrix = mat4();
-    pMatrix = mat4();
-    gl.uniformMatrix4fv( shaderProgram.modelView, false, flatten(mvMatrix) );
-    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(pMatrix) );
+    var mvMatrix = mat4();
+    var projectionMatrix = mat4();
+    gl.uniformMatrix4fv( shaderProgram.projection, false, flatten(projectionMatrix) );
 
-    normalMatrix = [
-                    vec3(mvMatrix[0][0], mvMatrix[0][1], mvMatrix[0][2]),
-                    vec3(mvMatrix[1][0], mvMatrix[1][1], mvMatrix[1][2]),
-                    vec3(mvMatrix[2][0], mvMatrix[2][1], mvMatrix[2][2])
-                ];
-    gl.uniformMatrix3fv(gl.getUniformLocation(shaderProgram.program, "normalMatrix"), false, flatten(normalMatrix) );
-    
-    var ambientProduct = mult(lightAmbient, materialAmbient);
-    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
-    var specularProduct = mult(lightSpecular, materialSpecular);
-    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-       "ambientProduct"),flatten(ambientProduct) );
-    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-       "diffuseProduct"),flatten(diffuseProduct) );
-    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-       "specularProduct"),flatten(specularProduct) );
-    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
-       "lightPosition"),flatten(lightPosition) );
-    gl.uniform1f( gl.getUniformLocation(shaderProgram.program,
-       "shininess"),materialShininess );
-    
     objects.push(getObject());
 
 	for (var i = 0; i < objects.length; i++) {
 		var o = objects[i];
-		gl.uniform3fv(shaderProgram.translationVector, o.transVector);
-		gl.uniform3fv(shaderProgram.rotationVector, o.rotVector);
-		gl.uniform3fv(shaderProgram.scaleVector, o.scaleVector);
+		
+	    var ambientProduct = mult(lightAmbient, materialAmbient);
+	    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
+	    var specularProduct = mult(lightSpecular, materialSpecular);
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+	       "ambientProduct"),flatten(ambientProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+	       "diffuseProduct"),flatten(diffuseProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+	       "specularProduct"),flatten(specularProduct) );
+	    gl.uniform4fv( gl.getUniformLocation(shaderProgram.program,
+	       "lightPosition"),flatten(lightPosition) );
+	    gl.uniform1f( gl.getUniformLocation(shaderProgram.program,
+	       "shininess"),materialShininess );
+	    
+	    var T = translate(o.transVector)
+	    var Rx = rotateZ(o.rotVector[0]);
+	    var Ry = rotateY(o.rotVector[1]);
+	    var Rz = rotateZ(o.rotVector[2]);
+		var S = scalem(o.scaleVector);
+		
+		var modelViewMatrix = mult(T, mult(Rx, mult(Ry, mult(Rz, S))));
+	    gl.uniformMatrix4fv( shaderProgram.modelView, false, flatten(modelViewMatrix) );
+	
+	    var normalMatrix_ = normalMatrix(modelViewMatrix, true);
+	    gl.uniformMatrix3fv(shaderProgram.normal, false, flatten(normalMatrix_) );
+
 		gl.bindBuffer(gl.ARRAY_BUFFER, o.shape.vBuffer);    
 		gl.vertexAttribPointer( shaderProgram.vPosition, 3, gl.FLOAT, false, 0, 0 );
 		gl.enableVertexAttribArray( shaderProgram.vPosition );
@@ -569,12 +595,12 @@ function render() {
 		gl.enableVertexAttribArray( shaderProgram.vNormal );
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, o.shape.iBuffer);
 		var fillColor = (i < objects.length - 1) ? o.colorVector : vec4(1.0, 1.0, 1.0, 1.0);
-		var wireColor;
-		if (fillColor[0] + fillColor[1] + fillColor[2] > 1.5) wireColor = vec4(0.0, 0.0, 0.0, 0.5);
-		else wireColor = vec4(0.5, 0.5, 0.5, 0.5)
-		gl.uniform4fv(shaderProgram.colorVector, wireColor);
-		gl.polygonOffset(0.0, 0.0);
-		gl.drawElements(gl.LINE_STRIP, o.shape.indices.length, gl.UNSIGNED_SHORT, 0);
+//		var wireColor;
+//		if (fillColor[0] + fillColor[1] + fillColor[2] > 1.5) wireColor = vec4(0.0, 0.0, 0.0, 0.5);
+//		else wireColor = vec4(0.5, 0.5, 0.5, 0.5)
+//		gl.uniform4fv(shaderProgram.colorVector, wireColor);
+//		gl.polygonOffset(0.0, 0.0);
+//		gl.drawElements(gl.LINE_STRIP, o.shape.indices.length, gl.UNSIGNED_SHORT, 0);
 		gl.uniform4fv(shaderProgram.colorVector, fillColor);
 		gl.polygonOffset(1.0, 1.0);
 		gl.drawElements(gl.TRIANGLES, o.shape.indices.length, gl.UNSIGNED_SHORT, 0);

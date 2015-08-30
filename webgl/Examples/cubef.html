@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
@@ -37,8 +38,8 @@ mat4 rotateZ(float theta)
     float s = sin( angle );
 
     // Remeber: thse matrices are column-major
-     mat4 rz = mat4( c, -s, 0.0, 0.0,
-		    s,  c, 0.0, 0.0,
+     mat4 rz = mat4( c, s, 0.0, 0.0,
+		    -s,  c, 0.0, 0.0,
 		    0.0,  0.0, 1.0, 0.0,
 		    0.0,  0.0, 0.0, 1.0 );
     return rz;
@@ -50,12 +51,13 @@ varying vec4 fColor;
 
 uniform vec3 theta;
 
-void main() 
+void main()
 {
 
     fColor = vColor;
     gl_Position = rotateZ(theta.z) * rotateY(theta.y) * rotateX(theta.x) * vPosition;
-} 
+	gl_Position.z = -gl_Position.z;
+}
 
 
 </script>
@@ -63,7 +65,7 @@ void main()
 <script id="fragment-shader" type="x-shader/x-fragment">
 
 precision mediump float;
-   
+
 varying vec4 fColor;
 
 void
@@ -79,10 +81,10 @@ main()
 <script type="text/javascript" src="cubef.js"></script>
 
 <body>
-<canvas id="gl-canvas" width="512" height="512">
+<canvas id="gl-canvas" width="512"" height="512">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
-   
+
 <br/>
 
 <button id= "xButton">Rotate X</button>

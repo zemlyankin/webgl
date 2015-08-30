@@ -31,8 +31,9 @@ var materialShininess = 100.0;
 
 var ctm;
 var ambientColor, diffuseColor, specularColor;
-var modelView, projection;
-var viewerPos;
+var modelViewMatrix, projectionMatrix;
+var rotationMatrix;
+
 var program;
 
 var xAxis = 0;
@@ -41,17 +42,23 @@ var zAxis = 2;
 var axis = 0;
 var theta =[0, 0, 0];
 
+var eye = vec3(1.0, 1.0, 1.0);;
+var at = vec3(0.0, 0.0, 0.0);
+var up = vec3(0.0, 1.0, 0.0);
+
 var thetaLoc;
 
-var flag = false;
+var rflag = false;
+var lflag = false;
+var cflag = false;
 
 function quad(a, b, c, d) {
 
      var t1 = subtract(vertices[b], vertices[a]);
-     var t2 = subtract(vertices[c], vertices[b]);
+     var t2 = subtract(vertices[c], vertices[a]);
      var normal = cross(t1, t2);
-     var normal = vec3(normal);
-     normal = normalize(normal);
+     normal = vec4(normal, 0);
+
 
      pointsArray.push(vertices[a]);
      normalsArray.push(normal);
@@ -103,7 +110,7 @@ window.onload = function init() {
     gl.bufferData( gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW );
 
     var vNormal = gl.getAttribLocation( program, "vNormal" );
-    gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0 );
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal );
 
     var vBuffer = gl.createBuffer();
@@ -116,9 +123,7 @@ window.onload = function init() {
 
     thetaLoc = gl.getUniformLocation(program, "theta");
 
-    viewerPos = vec3(0.0, 0.0, -20.0 );
-
-    projection = ortho(-1, 1, -1, 1, -100, 100);
+    projectionMatrix = ortho(-1, 1, -1, 1, -100, 100);
 
     var ambientProduct = mult(lightAmbient, materialAmbient);
     var diffuseProduct = mult(lightDiffuse, materialDiffuse);
@@ -127,7 +132,18 @@ window.onload = function init() {
     document.getElementById("ButtonX").onclick = function(){axis = xAxis;};
     document.getElementById("ButtonY").onclick = function(){axis = yAxis;};
     document.getElementById("ButtonZ").onclick = function(){axis = zAxis;};
-    document.getElementById("ButtonT").onclick = function(){flag = !flag;};
+    document.getElementById("ButtonC").onclick = function(){
+      cflag = !cflag;
+      gl.uniform1f(gl.getUniformLocation(program,
+         "cflag"),cflag);
+    };
+    document.getElementById("ButtonL").onclick = function(){
+      lflag = !lflag;
+      gl.uniform1f(gl.getUniformLocation(program,
+         "lFlag"),lflag);
+    };
+
+    document.getElementById("ButtonT").onclick = function(){rflag = !rflag;};
 
     gl.uniform4fv(gl.getUniformLocation(program, "ambientProduct"),
        flatten(ambientProduct));
@@ -142,7 +158,12 @@ window.onload = function init() {
        "shininess"),materialShininess);
 
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),
-       false, flatten(projection));
+       false, flatten(projectionMatrix));
+
+    modelViewMatrix = lookAt(eye, at , up);
+
+    gl.uniformMatrix4fv( gl.getUniformLocation(program,
+               "modelViewMatrix"), false, flatten(modelViewMatrix) );
 
     render();
 }
@@ -151,15 +172,15 @@ var render = function(){
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if(flag) theta[axis] += 2.0;
+    if(rflag) theta[axis] += 2.0;
 
-    modelView = mat4();
-    modelView = mult(modelView, rotate(theta[xAxis], [1, 0, 0] ));
-    modelView = mult(modelView, rotate(theta[yAxis], [0, 1, 0] ));
-    modelView = mult(modelView, rotate(theta[zAxis], [0, 0, 1] ));
+    rotationMatrix = mat4();
+    rotationMatrix = mult(rotationMatrix, rotate(theta[xAxis], [1, 0, 0] ));
+    rotationMatrix = mult(rotationMatrix, rotate(theta[yAxis], [0, 1, 0] ));
+    rotationMatrix = mult(rotationMatrix, rotate(theta[zAxis], [0, 0, 1] ));
 
     gl.uniformMatrix4fv( gl.getUniformLocation(program,
-            "modelViewMatrix"), false, flatten(modelView) );
+            "rotationMatrix"), false, flatten(rotationMatrix) );
 
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
 

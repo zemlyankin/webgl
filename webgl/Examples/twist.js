@@ -5,23 +5,28 @@ var gl;
 
 var points = [];
 
-var numTimesToSubdivide = 0;
+var NumTimesToSubdivide = 5;
 
-var bufferId;
-
-function init()
+window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
 
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
-    //
-    //  Initialize our data for the Sierpinski Gasket
-    //
 
-    // First, initialize the corners of our gasket with three points.
+    // First, initialize the corners of the outer triangle with three points.
 
+    var vertices = [
+        vec2( -0.5, -0.5 ),
+        vec2(  0,  0.5 ),
+        vec2(  0.5, -0.5 )
+    ];
+
+    // generate all the vertices in the points array
+
+    divideTriangle( vertices[0], vertices[1], vertices[2],
+                    NumTimesToSubdivide);
 
     //
     //  Configure WebGL
@@ -36,11 +41,9 @@ function init()
 
     // Load the data into the GPU
 
-    bufferId = gl.createBuffer();
+    var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, 8*Math.pow(3, 6), gl.STATIC_DRAW );
-
-
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
 
     // Associate out shader variables with our data buffer
 
@@ -48,26 +51,26 @@ function init()
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
 
-        document.getElementById("slider").onchange = function(event) {
-        numTimesToSubdivide = parseInt(event.target.value);
-        render();
-    };
-
-
     render();
 };
+
+// function for putting one triangle's vertices onto points array
 
 function triangle( a, b, c )
 {
     points.push( a, b, c );
 }
 
+// recursive subdivision of a triangles with vertices a, b and c
+// count = numner of recursive steps
+
 function divideTriangle( a, b, c, count )
 {
 
     // check for end of recursion
+    // if end then add vertices of triangle to points array
 
-    if ( count == 0 ) {
+    if ( count === 0 ) {
         triangle( a, b, c );
     }
     else {
@@ -78,32 +81,28 @@ function divideTriangle( a, b, c, count )
         var ac = mix( a, c, 0.5 );
         var bc = mix( b, c, 0.5 );
 
-        --count;
+      // decrement remaining recursive steps
 
-        // three new triangles
+        count--;
+
+        // four new triangles
 
         divideTriangle( a, ab, ac, count );
         divideTriangle( c, ac, bc, count );
         divideTriangle( b, bc, ab, count );
+        divideTriangle(ab, ac, bc, count );
     }
 }
 
-window.onload = init;
-
 function render()
 {
-    var vertices = [
-        vec2( -1, -1 ),
-        vec2(  0,  1 ),
-        vec2(  1, -1 )
-    ];
-    points = [];
-    divideTriangle( vertices[0], vertices[1], vertices[2],
-                    numTimesToSubdivide);
-
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatten(points));
     gl.clear( gl.COLOR_BUFFER_BIT );
-    gl.drawArrays( gl.TRIANGLES, 0, points.length );
-    points = [];
-    //requestAnimFrame(render);
+
+    //uncomment next line to render with lines
+
+    for(var i = 0; i < points.length; i+=3 ) gl.drawArrays(gl.LINE_LOOP, i, 3);
+
+    // unconmment next line to render with filled triangles
+
+    //gl.drawArrays( gl.TRIANGLES, 0, points.length );
 }
