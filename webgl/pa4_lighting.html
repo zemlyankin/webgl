@@ -22,6 +22,7 @@ uniform mat3 normalMatrix;
 
 uniform vec4 ambientProduct[3], diffuseProduct[3], specularProduct[3];
 uniform vec4 lightPosition[3];
+uniform int lightEnabled[3];
 uniform float shininess;
 
 void main()
@@ -33,7 +34,8 @@ void main()
     
     // check for directional light
 	for (int i = 0; i < 3; i++) {
-		//if (i ==2) continue;
+		if (lightEnabled[i] == 0) continue;
+
 	    // vector from vertex position to light source
     	vec3 L;
     
@@ -155,6 +157,17 @@ void main()
 				</div>
 				<div class="col-xs-4">
 					<button id="clear" type="button" class="btn btn-warning">Clear scene</button>
+				</div>
+			</div>
+
+			<div class="row spacer">
+				<div class="col-xs-2">
+					<input id="light1" type="checkbox" />
+					Light 1
+				</div>
+				<div class="col-xs-2">
+					<input id="light2" type="checkbox" />
+					Light 2
 				</div>
 			</div>
 

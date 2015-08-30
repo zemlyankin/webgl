@@ -282,6 +282,14 @@ function setupControls() {
 		v.target.classList.add("active");
 		//render();
 	});
+	
+	$("#light1").click(function(v) {
+		lights[1].enabled = $("#light1").is(":checked");
+	});
+	
+	$("#light2").click(function(v) {
+		lights[2].enabled = $("#light2").is(":checked");
+	});
 
 	$("#add").click(function(v) {
 		objects.push(getObject());
@@ -600,6 +608,9 @@ function render() {
     lights[2].position[0] = -1.0;
 	lights[2].position[1] = Math.cos(radians(lightAngle));
 	lights[2].position[2] = Math.sin(radians(lightAngle));
+
+    gl.uniform1iv( gl.getUniformLocation(shaderProgram.program, "lightEnabled"),
+    		new Int32Array([1, lights[1].enabled ? 1 : 0, lights[2].enabled ? 1 : 0]));
 
 	for (var i = 0; i < objects.length; i++) {
 		var o = objects[i];
