@@ -11,7 +11,7 @@ var Textures = [];
 var Sphere = {
 	latitudeBands: 60,
 	longitudeBands: 60,
-	radius: 0.6,
+	radius: 1.0,
 	vertices: [],
 	normals: [],
 	indices: [],
