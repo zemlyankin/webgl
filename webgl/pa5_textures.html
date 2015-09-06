@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+precision mediump float;
+
+attribute vec4 vPosition;
+attribute vec4 vNormal;
+attribute vec2 vTexCoord;
+
+uniform mat4 transformMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat3 normalMatrix;
+
+varying vec2 fTexCoord;
+
+void main()
+{
+    gl_Position = projectionMatrix * modelViewMatrix * transformMatrix * vPosition;
+	fTexCoord = vTexCoord;
+}
+
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform vec4 color;
+uniform sampler2D texture;
+
+varying vec2 fTexCoord;
+
+void main()
+{
+	gl_FragColor =  texture2D(texture, fTexCoord);
+}
+</script>
+
+<link rel="stylesheet" href="dist/bootstrap-3.3.5/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="styles.css"/>
+
+<script type="text/javascript" src="dist/jquery-2.1.4/jquery-2.1.4.min.js"></script>
+
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="pa5_textures.js"></script>
+</head>
+
+<body>
+
+<img id="texImage" src="world_scaled.jpg" hidden/>
+
+<div class="container-fluid">
+
+<div class="h3">
+	Interactive Computer Graphics with WebGL by Edward Angel<br>
+	<small>Programming assignment 5: Texture mapping to a sphere</small>
+</div>
+
+<div class="row">
+	
+	<div class="col-md-7">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			Canvas
+		</div>
+	
+		<div class="panel-body text-center">
+			<canvas id="gl-canvas" width="512" height="512">
+			Oops ... your browser doesn't support the HTML5 canvas element
+			</canvas>
+		</div>
+	</div>
+	</div>
+
+
+	<div class="col-md-5 col-xs-12">
+	<div class="panel panel-default">
+	
+		<div class="panel-heading">
+			Instructions
+		</div>
+	
+		<div class="panel-body">
+		
+		<div class="container-fluid">
+
+			<div class="row">
+				<div class="col-xs-12">
+					Move mouse while LEFT mouse button is pressed to rotate a sphere
+				</div>
+			</div>
+
+		</div>
+
+		</div>
+
+	</div>
+	</div>
+
+
+
+	<div class="col-md-5 col-xs-12">
+	<div class="panel panel-default">
+	
+		<div class="panel-heading">
+			Controls
+		</div>
+	
+		<div class="panel-body">
+		
+		<div class="container-fluid">
+
+			<div class="row spacer">
+				<div class="col-xs-12">
+					<div class="btn-group" role="group" aria-label="...">
+					  <button type="button" class="btn btn-default texture">Checker board</button>
+					  <button type="button" class="btn btn-default texture">Earth map</button>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		</div>
+
+	</div>
+	</div>
+	
+	
+</div>
+
+
+</div>
+
+</body>
+</html>
